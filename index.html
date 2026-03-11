@@ -159,8 +159,65 @@
     /* ── Sort Row ── */
     .sort-row {
       display: flex;
+      align-items: center;
       padding: 0 20px 12px;
       gap: 20px;
+    }
+
+    .sort-btns {
+      display: flex;
+      gap: 20px;
+    }
+
+    .hide-seen-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text-3);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      transition: color .15s;
+    }
+
+    .hide-seen-btn.active { color: var(--accent); }
+
+    /* ── Period Row (shown when sort=top) ── */
+    .period-row {
+      display: flex;
+      padding: 8px 20px 10px;
+      gap: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .period-btn {
+      background: none;
+      border: none;
+      color: var(--text-3);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      transition: color .15s;
+      position: relative;
+    }
+
+    .period-btn.active { color: var(--text); }
+
+    .period-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0; right: 0;
+      height: 1px;
+      background: var(--accent);
     }
 
     .sort-btn {
@@ -333,6 +390,14 @@
       font-size: 12px;
       color: var(--text-3);
       margin-top: 4px;
+    }
+
+    .feed-seen-hint {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--mono);
+      margin-top: 6px;
+      opacity: .7;
     }
 
     .feed-error {
@@ -606,9 +671,19 @@
         </div>
       </div>
       <div class="sort-row">
-        <button class="sort-btn active" data-sort="hot">Hot</button>
-        <button class="sort-btn" data-sort="top">Top</button>
-        <button class="sort-btn" data-sort="new">New</button>
+        <div class="sort-btns">
+          <button class="sort-btn active" data-sort="hot">Hot</button>
+          <button class="sort-btn" data-sort="top">Top</button>
+          <button class="sort-btn" data-sort="new">New</button>
+        </div>
+        <button class="hide-seen-btn active" id="hide-seen-btn">Hide seen</button>
+      </div>
+      <div class="period-row hidden" id="period-row">
+        <button class="period-btn" data-period="day">Day</button>
+        <button class="period-btn active" data-period="week">Week</button>
+        <button class="period-btn" data-period="month">Month</button>
+        <button class="period-btn" data-period="year">Year</button>
+        <button class="period-btn" data-period="all">All time</button>
       </div>
       <div class="sub-tabs-wrapper">
         <div class="sub-tabs" id="sub-tabs" role="tablist"></div>
@@ -646,6 +721,10 @@
         <div class="settings-row">
           <span class="settings-label">Clear visited posts</span>
           <button class="action-btn" id="clear-visited-btn">Clear</button>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Clear seen posts</span>
+          <button class="action-btn" id="clear-seen-btn">Clear</button>
         </div>
       </div>
     </div>
@@ -702,33 +781,36 @@
 'use strict';
 
 const DEFAULT_SUBS = [
-  'ClaudeAI',
-  'ClaudeCode',
-  'LocalLLaMA',
-  'MachineLearning',
-  'AIAgents',
-  'artificial',
-  'singularity',
-  'PromptEngineering',
-  'OpenAI',
-  'LangChain',
-  'Oobabooga',
-  'ChatGPT',
-  'ArtificialIntelligence',
-  'learnmachinelearning',
-  'datascience',
-  'StableDiffusion',
-  'programming',
-  'SoftwareEngineering',
-  'deeplearning',
-  'generativeAI',
+  'LocalLLaMA',        // open-source models, inference, hardware — highest signal
+  'ClaudeAI',          // Claude/Anthropic community, MCP, API usage
+  'ClaudeCode',        // Claude Code agent workflows, multi-agent, CLAUDE.md patterns
+  'LLMDevs',           // LLM app dev: RAG, evals, context, production — builder-first
+  'AI_Agents',         // agentic systems, LangGraph, CrewAI, AutoGen, agent evals
+  'PromptEngineering', // context engineering, system prompts, chain-of-thought
+  'MachineLearning',   // research papers, architectures, benchmarks
+  'LangChain',         // LangChain/LangGraph orchestration, agent pipelines
+  'ollama',            // Ollama tool, local serving, model integrations
+  'singularity',       // major AI announcements, capability news, landscape
+  'cursor_ai',         // Cursor IDE, agentic coding workflows
+  'OpenAI',            // GPT, Agents SDK, API changes — competitive awareness
+  'artificial',        // general AI news, releases, industry
+  'n8n',               // AI workflow automation, MCP pipelines, agent templates
+  'DeepLearning',      // transformer internals, KV cache, context mechanics
+  'Anthropic',         // Anthropic research, safety, Claude release notes
+  'LanguageTechnology', // NLP, embeddings, tokenization, retrieval evaluation
+  'ChatGPTPromptGenius', // reusable prompt templates, system prompt patterns
+  'learnmachinelearning', // ML foundations, structured learning resources
+  'generativeAI',      // GenAI applications, multimodal, new product launches
 ];
 
 const VISITED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SEEN_TTL_MS    = 7 * 24 * 60 * 60 * 1000;
 
 let state = {
   subreddits: [...DEFAULT_SUBS],
   sortMode: 'hot',
+  topPeriod: 'week',
+  hideSeen: true,
   postCap: 10,
   activeSubFilter: 'all',
   currentView: 'feed',
@@ -747,6 +829,10 @@ function loadState() {
     if (subs) state.subreddits = JSON.parse(subs);
     const sort = localStorage.getItem('sort');
     if (sort) state.sortMode = sort;
+    const tp = localStorage.getItem('topPeriod');
+    if (tp) state.topPeriod = tp;
+    const hs = localStorage.getItem('hideSeen');
+    if (hs !== null) state.hideSeen = hs === '1';
     const cap = localStorage.getItem('cap');
     if (cap) state.postCap = parseInt(cap, 10);
     const lf = localStorage.getItem('lastFetch');
@@ -760,6 +846,8 @@ function savePrefs() {
   try {
     localStorage.setItem('subs', JSON.stringify(state.subreddits));
     localStorage.setItem('sort', state.sortMode);
+    localStorage.setItem('topPeriod', state.topPeriod);
+    localStorage.setItem('hideSeen', state.hideSeen ? '1' : '0');
     localStorage.setItem('cap', String(state.postCap));
   } catch(e) {}
 }
@@ -799,11 +887,39 @@ function clearVisited() {
   try { localStorage.removeItem('visited'); } catch(e) {}
 }
 
+function getSeenIds() {
+  try {
+    const raw = localStorage.getItem('seen');
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    const now = Date.now();
+    const pruned = {};
+    for (const [id, ts] of Object.entries(data)) {
+      if (now - ts < SEEN_TTL_MS) pruned[id] = ts;
+    }
+    return pruned;
+  } catch(e) { return {}; }
+}
+
+function markSeen(posts) {
+  try {
+    if (!posts.length) return;
+    const seen = getSeenIds();
+    const now = Date.now();
+    for (const p of posts) seen[p.id] = now;
+    localStorage.setItem('seen', JSON.stringify(seen));
+  } catch(e) {}
+}
+
+function clearSeen() {
+  try { localStorage.removeItem('seen'); } catch(e) {}
+}
+
 // ── Reddit API ────────────────────────────────────────────────────────────────
 
 function sortUrl(sub, sort, cap) {
   const base = `https://www.reddit.com/r/${encodeURIComponent(sub)}`;
-  if (sort === 'top') return `${base}/top.json?t=week&limit=${cap}&raw_json=1`;
+  if (sort === 'top') return `${base}/top.json?t=${state.topPeriod}&limit=${cap}&raw_json=1`;
   if (sort === 'new') return `${base}/new.json?limit=${cap}&raw_json=1`;
   return `${base}/hot.json?limit=${cap}&raw_json=1`;
 }
@@ -899,6 +1015,22 @@ function renderSortBtns() {
   });
 }
 
+function renderTopPeriodRow() {
+  const row = document.getElementById('period-row');
+  if (!row) return;
+  row.classList.toggle('hidden', state.sortMode !== 'top');
+  document.querySelectorAll('.period-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.period === state.topPeriod);
+  });
+}
+
+function renderHideSeenBtn() {
+  const btn = document.getElementById('hide-seen-btn');
+  if (!btn) return;
+  btn.classList.toggle('active', state.hideSeen);
+  btn.textContent = state.hideSeen ? 'Hide seen' : 'Show all';
+}
+
 function renderSettingsValues() {
   const capSel = document.getElementById('cap-select');
   const sortSel = document.getElementById('sort-select');
@@ -969,13 +1101,18 @@ function renderFeed() {
     return;
   }
 
-  const filtered = state.activeSubFilter === 'all'
+  const seenIds = state.hideSeen ? getSeenIds() : {};
+
+  const subFiltered = state.activeSubFilter === 'all'
     ? posts
     : posts.filter(p => p.subreddit.toLowerCase() === state.activeSubFilter.toLowerCase());
 
+  const seenCount = state.hideSeen ? subFiltered.filter(p => seenIds[p.id]).length : 0;
+  const withSeenFilter = state.hideSeen ? subFiltered.filter(p => !seenIds[p.id]) : subFiltered;
+
   const sorted = state.activeSubFilter === 'all'
-    ? [...filtered].sort((a, b) => b.score - a.score)
-    : filtered;
+    ? [...withSeenFilter].sort((a, b) => b.score - a.score)
+    : withSeenFilter;
 
   const visited = getVisited();
   const staleHtml = isStale
@@ -983,19 +1120,25 @@ function renderFeed() {
     : '';
 
   if (!sorted.length) {
+    const seenNote = seenCount > 0 ? `<p>${seenCount} post${seenCount !== 1 ? 's' : ''} hidden (seen). Toggle "Hide seen" to show.</p>` : '';
+    const defaultNote = !seenNote ? `<p>${state.activeSubFilter !== 'all' ? `Nothing from r/${esc(state.activeSubFilter)} right now.` : 'Tap Refresh to load posts.'}</p>` : '';
     container.innerHTML = staleHtml + `
       <div class="empty-state">
-        <h3>No posts found</h3>
-        <p>Nothing from r/${esc(state.activeSubFilter)} right now.</p>
+        <h3>No new posts</h3>
+        ${seenNote}${defaultNote}
       </div>
     `;
     return;
   }
 
   const subLabel = state.activeSubFilter === 'all' ? 'all subreddits' : `r/${state.activeSubFilter}`;
+  const seenHint = seenCount > 0
+    ? `<div class="feed-seen-hint">${seenCount} older post${seenCount !== 1 ? 's' : ''} hidden (seen)</div>`
+    : '';
   const endHtml = `
     <div class="feed-end">
       <div class="feed-end-count">${sorted.length} post${sorted.length !== 1 ? 's' : ''}</div>
+      ${seenHint}
       <div class="feed-end-msg">End of ${esc(subLabel)}. Tap Refresh for new content.</div>
     </div>
   `;
@@ -1007,6 +1150,7 @@ function renderFeed() {
 
 async function refresh() {
   if (state.loading) return;
+  const prevPosts = state.posts.slice();
   state.loading = true;
   state.error = null;
   const btn = document.getElementById('refresh-btn');
@@ -1015,6 +1159,7 @@ async function refresh() {
 
   try {
     const posts = await fetchAll();
+    markSeen(prevPosts);
     state.posts = posts;
     state.cachedPosts = posts;
     saveCachedPosts(posts);
@@ -1044,8 +1189,24 @@ function setSort(sort) {
   state.posts = [];
   savePrefs();
   renderSortBtns();
+  renderTopPeriodRow();
   renderSettingsValues();
   refresh();
+}
+
+function setPeriod(period) {
+  state.topPeriod = period;
+  state.posts = [];
+  savePrefs();
+  renderTopPeriodRow();
+  refresh();
+}
+
+function toggleHideSeen() {
+  state.hideSeen = !state.hideSeen;
+  savePrefs();
+  renderHideSeenBtn();
+  renderFeed();
 }
 
 function setSubFilter(sub) {
@@ -1175,6 +1336,14 @@ function bindEvents() {
     b.addEventListener('click', () => setSort(b.dataset.sort));
   });
 
+  // Top period
+  document.querySelectorAll('.period-btn').forEach(b => {
+    b.addEventListener('click', () => setPeriod(b.dataset.period));
+  });
+
+  // Hide seen toggle
+  document.getElementById('hide-seen-btn').addEventListener('click', toggleHideSeen);
+
   // Subreddit filter tabs (delegated)
   document.getElementById('sub-tabs').addEventListener('click', e => {
     const t = e.target.closest('.sub-tab');
@@ -1207,6 +1376,11 @@ function bindEvents() {
 
   document.getElementById('clear-visited-btn').addEventListener('click', () => {
     clearVisited();
+    renderFeed();
+  });
+
+  document.getElementById('clear-seen-btn').addEventListener('click', () => {
+    clearSeen();
     renderFeed();
   });
 
@@ -1256,6 +1430,8 @@ function boot() {
   bindEvents();
   renderSubTabs();
   renderSortBtns();
+  renderTopPeriodRow();
+  renderHideSeenBtn();
   renderFeed();
   registerSW();
 
