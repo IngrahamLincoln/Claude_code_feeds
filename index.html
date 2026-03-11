@@ -10,55 +10,35 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="AI Reader">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <meta name="theme-color" content="#0d0d14" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#5b5ef4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0f10">
   <style>
-    /* ── Reset & Base ── */
+    /* ── Reset ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --accent: #6366f1;
-      --accent-soft: #818cf8;
-      --bg: #f4f4f8;
-      --bg-card: #ffffff;
-      --bg-nav: #ffffffee;
-      --bg-tab: #e8e8f0;
-      --bg-tab-active: #ffffff;
-      --text: #111118;
-      --text-muted: #6b7280;
-      --text-visited: #9ca3af;
-      --border: #e2e2ec;
-      --shadow: 0 1px 3px rgba(0,0,0,.08);
-      --tag-bg: #ede9fe;
-      --tag-text: #4f46e5;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --nav-h: 56px;
-      --radius: 14px;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0d0d14;
-        --bg-card: #1a1a26;
-        --bg-nav: #13131eee;
-        --bg-tab: #1a1a26;
-        --bg-tab-active: #2a2a3c;
-        --text: #f0f0f8;
-        --text-muted: #9094a8;
-        --text-visited: #50546a;
-        --border: #2a2a3c;
-        --shadow: 0 1px 3px rgba(0,0,0,.3);
-        --tag-bg: #1e1b4b;
-        --tag-text: #a5b4fc;
-      }
+      --bg:         #0f0f10;
+      --surface:    #161618;
+      --border:     #1e1e20;
+      --border-mid: #2a2a2e;
+      --text:       #e2e2e6;
+      --text-2:     #75757c;
+      --text-3:     #3a3a3e;
+      --accent:     #9394c8;
+      --accent-dim: #4a4a6a;
+      --safe-top:   env(safe-area-inset-top,   0px);
+      --safe-bot:   env(safe-area-inset-bottom, 0px);
+      --nav-h:      52px;
+      --mono: 'SF Mono', ui-monospace, 'Cascadia Code', monospace;
     }
 
     html, body {
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
       overscroll-behavior: none;
       -webkit-tap-highlight-color: transparent;
     }
@@ -69,48 +49,6 @@
       flex-direction: column;
       max-width: 680px;
       margin: 0 auto;
-      position: relative;
-    }
-
-    /* ── Install Banner ── */
-    .install-banner {
-      position: fixed;
-      bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px);
-      left: 12px;
-      right: 12px;
-      z-index: 100;
-      background: var(--accent);
-      color: #fff;
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-      line-height: 1.4;
-      box-shadow: 0 4px 20px rgba(99,102,241,.4);
-      animation: slideUp .3s ease;
-    }
-
-    .install-banner .banner-icon { font-size: 20px; flex-shrink: 0; }
-    .install-banner .banner-text { flex: 1; }
-    .install-banner .banner-text strong { font-weight: 600; }
-    .install-banner .dismiss-btn {
-      background: rgba(255,255,255,.2);
-      border: none;
-      color: #fff;
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      font-size: 16px;
-      cursor: pointer;
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      line-height: 1;
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
     }
 
     /* ── Views ── */
@@ -119,85 +57,142 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       padding-top: var(--safe-top);
-      padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+      padding-bottom: calc(var(--nav-h) + var(--safe-bot) + 24px);
     }
 
     .hidden { display: none !important; }
 
-    /* ── Header Bar ── */
+    /* ── Install Banner ── */
+    .install-banner {
+      position: fixed;
+      bottom: calc(var(--nav-h) + var(--safe-bot) + 12px);
+      left: 16px;
+      right: 16px;
+      z-index: 100;
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      animation: rise .25s ease;
+    }
+
+    @keyframes rise {
+      from { transform: translateY(8px); opacity: 0; }
+      to   { transform: translateY(0);   opacity: 1; }
+    }
+
+    .install-banner .banner-text {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.5;
+    }
+
+    .install-banner .banner-text strong { color: var(--text); font-weight: 500; }
+
+    .install-banner .dismiss-btn {
+      background: none;
+      border: none;
+      color: var(--text-3);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Header ── */
     .header {
       position: sticky;
       top: var(--safe-top);
       z-index: 10;
-      background: var(--bg-nav);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: var(--bg);
       border-bottom: 1px solid var(--border);
     }
 
     .header-top {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: space-between;
-      padding: 12px 16px 8px;
-      gap: 12px;
+      padding: 18px 20px 12px;
     }
 
     .header-title {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -.3px;
-      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-2);
     }
 
-    .header-actions { display: flex; align-items: center; gap: 8px; }
-
-    .icon-btn {
-      background: var(--bg-tab);
-      border: none;
-      color: var(--text);
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      font-size: 17px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: opacity .15s;
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
-
-    .icon-btn:active { opacity: .6; }
 
     .last-fetch {
       font-size: 11px;
-      color: var(--text-muted);
-      text-align: center;
-      padding: 0 16px 6px;
+      color: var(--text-3);
+      font-family: var(--mono);
     }
 
-    /* ── Sort Tabs ── */
-    .sort-tabs {
+    .refresh-btn {
+      background: none;
+      border: none;
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      letter-spacing: .02em;
+      font-family: inherit;
+      transition: color .15s;
+    }
+
+    .refresh-btn:active { color: var(--accent); }
+    .refresh-btn.refreshing { color: var(--accent-dim); pointer-events: none; }
+
+    /* ── Sort Row ── */
+    .sort-row {
       display: flex;
-      padding: 0 16px 10px;
-      gap: 6px;
+      padding: 0 20px 12px;
+      gap: 20px;
     }
 
     .sort-btn {
-      background: var(--bg-tab);
+      background: none;
       border: none;
-      color: var(--text-muted);
+      color: var(--text-3);
       font-size: 13px;
       font-weight: 500;
-      padding: 6px 14px;
-      border-radius: 20px;
       cursor: pointer;
-      transition: background .15s, color .15s;
+      padding: 0;
+      font-family: inherit;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      font-size: 11px;
+      transition: color .15s;
+      position: relative;
     }
 
     .sort-btn.active {
-      background: var(--accent);
-      color: #fff;
+      color: var(--text);
     }
 
-    /* ── Subreddit Filter Tabs ── */
+    .sort-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0; right: 0;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    /* ── Subreddit Filter ── */
     .sub-tabs-wrapper {
       border-top: 1px solid var(--border);
       overflow-x: auto;
@@ -209,242 +204,224 @@
 
     .sub-tabs {
       display: flex;
-      padding: 8px 12px;
-      gap: 6px;
+      padding: 10px 20px;
+      gap: 0;
       width: max-content;
     }
 
     .sub-tab {
-      background: var(--bg-tab);
+      background: none;
       border: none;
-      color: var(--text-muted);
+      color: var(--text-3);
       font-size: 13px;
-      font-weight: 500;
-      padding: 6px 14px;
-      border-radius: 20px;
+      font-weight: 400;
       cursor: pointer;
+      padding: 0 14px 0 0;
+      font-family: inherit;
       white-space: nowrap;
-      transition: background .15s, color .15s;
+      transition: color .15s;
     }
 
-    .sub-tab.active {
-      background: var(--bg-tab-active);
-      color: var(--text);
-      box-shadow: var(--shadow);
-    }
+    .sub-tab:first-child { padding-left: 0; }
+
+    .sub-tab.active { color: var(--text); font-weight: 500; }
 
     /* ── Feed ── */
-    .feed {
-      padding: 12px 12px 0;
-    }
+    #feed { padding: 0; }
 
-    /* ── Post Card ── */
+    /* ── Post Row ── */
     .post-card {
-      background: var(--bg-card);
-      border-radius: var(--radius);
-      padding: 14px 15px;
-      margin-bottom: 8px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
       display: block;
       text-decoration: none;
       color: inherit;
-      -webkit-user-select: none;
-      user-select: none;
-      transition: opacity .15s;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
     }
 
-    .post-card:active { opacity: .7; }
+    .post-card:active { background: var(--surface); }
 
-    .post-card.visited .post-title { color: var(--text-visited); }
+    .post-card.visited .post-title {
+      color: var(--text-3);
+    }
 
     .post-meta-top {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 7px;
+      margin-bottom: 5px;
     }
 
-    .sub-tag {
+    .sub-label {
       font-size: 11px;
       font-weight: 600;
-      background: var(--tag-bg);
-      color: var(--tag-text);
-      padding: 2px 8px;
-      border-radius: 10px;
-      white-space: nowrap;
-    }
-
-    .post-age {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-left: auto;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-family: var(--mono);
     }
 
     .post-flair {
       font-size: 11px;
-      color: var(--text-muted);
-      background: var(--bg-tab);
-      padding: 2px 7px;
-      border-radius: 8px;
-      white-space: nowrap;
-      max-width: 100px;
+      color: var(--text-3);
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 120px;
     }
 
     .post-title {
       font-size: 15px;
-      font-weight: 500;
-      line-height: 1.4;
+      font-weight: 400;
+      line-height: 1.45;
       color: var(--text);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .post-meta-bottom {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 16px;
     }
 
     .post-stat {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 13px;
-      color: var(--text-muted);
+      font-size: 12px;
+      color: var(--text-3);
+      font-family: var(--mono);
+      letter-spacing: .02em;
     }
 
-    .post-stat svg { flex-shrink: 0; }
+    .post-age {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--mono);
+      margin-left: auto;
+    }
 
     /* ── Feed States ── */
     .feed-loading {
-      padding: 40px 16px;
+      padding: 48px 20px;
+      font-size: 13px;
+      color: var(--text-3);
       text-align: center;
-      color: var(--text-muted);
+      letter-spacing: .04em;
     }
 
-    .spinner {
-      width: 28px; height: 28px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      margin: 0 auto 12px;
+    .loading-pulse {
+      display: inline-block;
+      animation: pulse 1.4s ease infinite;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse {
+      0%, 100% { opacity: .2; }
+      50%       { opacity: .8; }
+    }
 
     .feed-end {
-      margin: 8px 0 0;
-      padding: 20px 16px;
-      text-align: center;
-      background: var(--bg-card);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      margin-bottom: 8px;
+      padding: 28px 20px;
+      border-top: 1px solid var(--border);
     }
 
     .feed-end-count {
-      font-size: 17px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 4px;
+      font-size: 12px;
+      color: var(--text-3);
+      font-family: var(--mono);
+      letter-spacing: .04em;
     }
 
-    .feed-end-sub {
-      font-size: 13px;
-      color: var(--text-muted);
+    .feed-end-msg {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 4px;
     }
 
     .feed-error {
-      padding: 30px 16px;
+      padding: 48px 20px;
+      font-size: 13px;
+      color: var(--text-3);
       text-align: center;
-      color: var(--text-muted);
-      font-size: 14px;
+      line-height: 1.7;
     }
 
-    .feed-error .error-icon { font-size: 32px; margin-bottom: 10px; }
-
-    .stale-banner {
-      margin: 8px 12px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 14px;
+    .stale-notice {
+      padding: 10px 20px;
       font-size: 12px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      color: var(--text-3);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
     }
 
-    /* ── Empty/Offline ── */
     .empty-state {
       padding: 60px 24px;
       text-align: center;
-      color: var(--text-muted);
     }
 
-    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
-    .empty-state h3 { font-size: 17px; color: var(--text); margin-bottom: 6px; }
-    .empty-state p { font-size: 14px; line-height: 1.5; }
+    .empty-state h3 {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-2);
+      margin-bottom: 6px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      color: var(--text-3);
+      line-height: 1.6;
+    }
 
     /* ── Settings ── */
-    .settings-view {
-      padding: 0;
+    .settings-header-row {
+      padding: calc(var(--safe-top) + 18px) 20px 16px;
+      border-bottom: 1px solid var(--border);
     }
 
-    .settings-header {
-      padding: calc(var(--safe-top) + 20px) 16px 16px;
-      font-size: 20px;
-      font-weight: 700;
+    .settings-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-2);
     }
 
     .settings-section {
-      margin: 0 12px 20px;
-      background: var(--bg-card);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      overflow: hidden;
+      margin-top: 24px;
+      padding: 0 20px;
     }
 
-    .settings-section-title {
-      font-size: 12px;
+    .settings-section-label {
+      font-size: 11px;
       font-weight: 600;
-      color: var(--text-muted);
+      letter-spacing: .1em;
       text-transform: uppercase;
-      letter-spacing: .5px;
-      padding: 12px 16px 6px;
+      color: var(--text-3);
+      margin-bottom: 12px;
+      font-family: var(--mono);
+    }
+
+    .settings-block {
+      border-top: 1px solid var(--border);
     }
 
     .settings-row {
       display: flex;
       align-items: center;
-      padding: 13px 16px;
-      border-top: 1px solid var(--border);
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
       gap: 12px;
     }
 
-    .settings-row:first-of-type { border-top: none; }
-
     .settings-label {
       flex: 1;
-      font-size: 15px;
-    }
-
-    .settings-value {
-      font-size: 15px;
-      color: var(--text-muted);
+      font-size: 14px;
+      color: var(--text);
     }
 
     .select-input {
-      background: var(--bg-tab);
-      border: none;
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
       color: var(--text);
-      font-size: 14px;
+      font-size: 13px;
       padding: 6px 10px;
-      border-radius: 8px;
       -webkit-appearance: none;
       appearance: none;
       font-family: inherit;
@@ -453,116 +430,125 @@
       text-align: right;
     }
 
-    /* ── Subreddit List ── */
-    .sub-list { list-style: none; }
+    .action-btn {
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 14px;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: .02em;
+      transition: color .15s, border-color .15s;
+    }
+
+    .action-btn:active { color: var(--text); border-color: var(--text-3); }
+    .action-btn:disabled { opacity: .35; cursor: default; }
+
+    /* ── Sub List ── */
+    .sub-list { list-style: none; border-top: 1px solid var(--border); }
 
     .sub-item {
       display: flex;
       align-items: center;
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
-      gap: 12px;
-      animation: fadeIn .2s ease;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+      animation: fadeIn .15s ease;
     }
 
-    .sub-item:first-child { border-top: none; }
-
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
     .sub-item-name {
       flex: 1;
-      font-size: 15px;
-    }
-
-    .sub-item-name span {
+      font-size: 14px;
+      color: var(--text);
+      font-family: var(--mono);
       font-size: 13px;
-      color: var(--text-muted);
     }
 
     .remove-btn {
       background: none;
       border: none;
-      color: #ef4444;
-      font-size: 20px;
+      color: var(--text-3);
+      font-size: 18px;
       cursor: pointer;
-      width: 36px; height: 36px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 50%;
-      transition: background .15s;
-      flex-shrink: 0;
+      padding: 6px;
+      line-height: 1;
+      transition: color .15s;
     }
 
-    .remove-btn:active { background: rgba(239,68,68,.1); }
+    .remove-btn:active { color: #e05555; }
 
-    /* ── Add Subreddit Form ── */
+    /* ── Add Sub Form ── */
     .add-sub-form {
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
       display: flex;
       gap: 10px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
     }
 
     .text-input {
       flex: 1;
-      background: var(--bg-tab);
-      border: 1px solid var(--border);
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
       color: var(--text);
-      font-size: 15px;
+      font-size: 14px;
       padding: 9px 12px;
-      border-radius: 10px;
-      font-family: inherit;
+      font-family: var(--mono);
       outline: none;
       min-width: 0;
     }
 
-    .text-input:focus { border-color: var(--accent); }
-    .text-input::placeholder { color: var(--text-muted); }
+    .text-input:focus { border-color: var(--accent-dim); }
+    .text-input::placeholder { color: var(--text-3); }
 
     .add-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      font-size: 14px;
-      font-weight: 600;
+      background: none;
+      border: 1px solid var(--border-mid);
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
       padding: 9px 18px;
-      border-radius: 10px;
       cursor: pointer;
       white-space: nowrap;
       font-family: inherit;
-      transition: opacity .15s;
+      letter-spacing: .03em;
+      transition: color .15s, border-color .15s;
     }
 
-    .add-btn:active { opacity: .8; }
-    .add-btn:disabled { opacity: .5; cursor: default; }
+    .add-btn:active { color: var(--text); }
+    .add-btn:disabled { opacity: .35; cursor: default; }
 
     .add-error {
-      padding: 6px 16px 10px;
-      font-size: 13px;
-      color: #ef4444;
+      font-size: 12px;
+      color: #e05555;
+      padding: 6px 0 10px;
+      font-family: var(--mono);
     }
 
-    /* ── Export/Import ── */
-    .settings-action-btn {
-      background: var(--bg-tab);
-      border: none;
-      color: var(--text);
-      font-size: 15px;
-      padding: 13px 16px;
-      cursor: pointer;
-      font-family: inherit;
-      width: 100%;
-      text-align: left;
-      border-top: 1px solid var(--border);
+    .settings-action-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
     }
 
-    .settings-action-btn:first-of-type { border-top: none; }
-    .settings-action-btn:active { opacity: .7; }
+    .settings-action-label {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .settings-action-hint {
+      font-size: 12px;
+      color: var(--text-3);
+      font-family: var(--mono);
+    }
 
     /* ── Bottom Nav ── */
     .tab-bar {
@@ -573,54 +559,29 @@
       width: 100%;
       max-width: 680px;
       z-index: 50;
-      background: var(--bg-nav);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: var(--bg);
       border-top: 1px solid var(--border);
       display: flex;
-      padding-bottom: var(--safe-bottom);
-      height: calc(var(--nav-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bot);
+      height: calc(var(--nav-h) + var(--safe-bot));
     }
 
     .tab-btn {
       flex: 1;
       background: none;
       border: none;
-      color: var(--text-muted);
+      color: var(--text-3);
       cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
-      padding: 8px 0;
-      transition: color .15s;
+      letter-spacing: .08em;
+      text-transform: uppercase;
       font-family: inherit;
+      transition: color .15s;
+      padding: 0;
     }
 
-    .tab-btn.active { color: var(--accent); }
-    .tab-btn svg { width: 22px; height: 22px; }
-
-    /* ── Refresh spin animation ── */
-    .refreshing svg { animation: spin .7s linear infinite; }
-
-    /* ── Badges ── */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--accent);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      min-width: 18px;
-      height: 18px;
-      border-radius: 9px;
-      padding: 0 5px;
-      margin-left: 4px;
-    }
+    .tab-btn.active { color: var(--text); }
   </style>
 </head>
 <body>
@@ -628,49 +589,46 @@
 
   <!-- Install Banner -->
   <div id="install-banner" class="install-banner hidden">
-    <span class="banner-icon">📱</span>
-    <div class="banner-text">Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for the full app experience</div>
-    <button class="dismiss-btn" id="dismiss-banner" aria-label="Dismiss">✕</button>
+    <div class="banner-text">
+      Open in Safari. Tap <strong>Share</strong>, then <strong>Add to Home Screen</strong> for the full experience.
+    </div>
+    <button class="dismiss-btn" id="dismiss-banner" aria-label="Dismiss">x</button>
   </div>
 
-  <!-- ── Feed View ── -->
+  <!-- Feed View -->
   <div id="feed-view" class="view">
     <div class="header">
       <div class="header-top">
-        <h1 class="header-title">AI Reader</h1>
-        <div class="header-actions">
-          <button class="icon-btn" id="refresh-btn" aria-label="Refresh" title="Refresh feed">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16"/>
-              <polyline points="21 3 21 8 16 8"/>
-              <polyline points="3 21 3 16 8 16"/>
-            </svg>
-          </button>
+        <span class="header-title">AI Reader</span>
+        <div class="header-right">
+          <span id="last-fetch" class="last-fetch"></span>
+          <button class="refresh-btn" id="refresh-btn">Refresh</button>
         </div>
       </div>
-      <div class="sort-tabs">
-        <button class="sort-btn active" data-sort="hot">🔥 Hot</button>
-        <button class="sort-btn" data-sort="top">📈 Top</button>
-        <button class="sort-btn" data-sort="new">🆕 New</button>
+      <div class="sort-row">
+        <button class="sort-btn active" data-sort="hot">Hot</button>
+        <button class="sort-btn" data-sort="top">Top</button>
+        <button class="sort-btn" data-sort="new">New</button>
       </div>
-      <div id="last-fetch" class="last-fetch" aria-live="polite"></div>
       <div class="sub-tabs-wrapper">
-        <div class="sub-tabs" id="sub-tabs" role="tablist" aria-label="Subreddit filter"></div>
+        <div class="sub-tabs" id="sub-tabs" role="tablist"></div>
       </div>
     </div>
-    <div class="feed" id="feed" role="main" aria-label="Post feed"></div>
+    <div id="feed" role="main"></div>
   </div>
 
-  <!-- ── Settings View ── -->
+  <!-- Settings View -->
   <div id="settings-view" class="view hidden">
-    <div class="settings-view">
-      <div class="settings-header">Settings</div>
+    <div class="settings-header-row">
+      <span class="settings-title">Settings</span>
+    </div>
 
-      <div class="settings-section">
-        <div class="settings-section-title">Feed Options</div>
+    <div class="settings-section">
+      <div class="settings-section-label">Feed</div>
+      <div class="settings-block">
         <div class="settings-row">
           <span class="settings-label">Posts per subreddit</span>
-          <select class="select-input" id="cap-select" aria-label="Post cap">
+          <select class="select-input" id="cap-select">
             <option value="5">5</option>
             <option value="10" selected>10</option>
             <option value="15">15</option>
@@ -679,84 +637,95 @@
         </div>
         <div class="settings-row">
           <span class="settings-label">Default sort</span>
-          <select class="select-input" id="sort-select" aria-label="Sort order">
-            <option value="hot">🔥 Hot</option>
-            <option value="top">📈 Top</option>
-            <option value="new">🆕 New</option>
+          <select class="select-input" id="sort-select">
+            <option value="hot">Hot</option>
+            <option value="top">Top</option>
+            <option value="new">New</option>
           </select>
         </div>
         <div class="settings-row">
           <span class="settings-label">Clear visited posts</span>
-          <button class="add-btn" id="clear-visited-btn" style="font-size:13px;padding:7px 14px;">Clear</button>
+          <button class="action-btn" id="clear-visited-btn">Clear</button>
         </div>
       </div>
+    </div>
 
-      <div class="settings-section">
-        <div class="settings-section-title">Subreddits</div>
-        <ul class="sub-list" id="sub-list" aria-label="Subreddit list"></ul>
-        <div class="add-sub-form">
-          <input class="text-input" id="add-sub-input" type="text" placeholder="subreddit name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="40" aria-label="Add subreddit">
-          <button class="add-btn" id="add-sub-btn">Add</button>
-        </div>
-        <div id="add-error" class="add-error hidden" aria-live="polite"></div>
+    <div class="settings-section">
+      <div class="settings-section-label">Subreddits</div>
+      <ul class="sub-list" id="sub-list"></ul>
+      <div class="add-sub-form">
+        <input class="text-input" id="add-sub-input" type="text"
+          placeholder="subreddit name"
+          autocomplete="off" autocorrect="off" autocapitalize="off"
+          spellcheck="false" maxlength="40">
+        <button class="add-btn" id="add-sub-btn">Add</button>
       </div>
+      <div id="add-error" class="add-error hidden"></div>
+    </div>
 
-      <div class="settings-section">
-        <div class="settings-section-title">Data</div>
-        <button class="settings-action-btn" id="export-btn">
-          <span>Export subreddit list</span>
-          <span style="color:var(--text-muted)">JSON ↗</span>
-        </button>
-        <label class="settings-action-btn" for="import-input" style="cursor:pointer">
-          <span>Import subreddit list</span>
-          <span style="color:var(--text-muted)">JSON ↙</span>
+    <div class="settings-section">
+      <div class="settings-section-label">Data</div>
+      <div class="settings-block">
+        <div class="settings-action-row" id="export-btn" role="button" tabindex="0">
+          <span class="settings-action-label">Export subreddit list</span>
+          <span class="settings-action-hint">json</span>
+        </div>
+        <label class="settings-action-row" for="import-input" style="cursor:pointer">
+          <span class="settings-action-label">Import subreddit list</span>
+          <span class="settings-action-hint">json</span>
         </label>
-        <input type="file" id="import-input" accept=".json" style="display:none" aria-label="Import JSON">
+        <input type="file" id="import-input" accept=".json" style="display:none">
       </div>
+    </div>
 
-      <div class="settings-section">
-        <div class="settings-section-title">About</div>
+    <div class="settings-section">
+      <div class="settings-section-label">About</div>
+      <div class="settings-block">
         <div class="settings-row">
-          <span class="settings-label" style="color:var(--text-muted);font-size:14px;line-height:1.5">
-            AI Reader is a focused, no-scroll PWA for AI subreddits. No ads. No infinite scroll. No algorithms. Just the posts you asked for.
+          <span class="settings-label" style="color:var(--text-2);font-size:13px;line-height:1.6">
+            Focused, finite feed of AI subreddit posts. No infinite scroll. No ads. No recommendations.
           </span>
         </div>
       </div>
     </div>
+
   </div>
 
-  <!-- ── Bottom Tab Bar ── -->
-  <nav class="tab-bar" role="navigation" aria-label="Main navigation">
-    <button class="tab-btn active" data-view="feed" id="tab-feed" aria-label="Feed" aria-selected="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-      Feed
-    </button>
-    <button class="tab-btn" data-view="settings" id="tab-settings" aria-label="Settings" aria-selected="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-      Settings
-    </button>
+  <!-- Bottom Nav -->
+  <nav class="tab-bar" role="navigation">
+    <button class="tab-btn active" data-view="feed" id="tab-feed">Feed</button>
+    <button class="tab-btn" data-view="settings" id="tab-settings">Settings</button>
   </nav>
 
 </div>
-
 <script>
 'use strict';
 
-// ─────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────
-const DEFAULT_SUBS = ['ClaudeAI','ClaudeCode','LocalLLaMA','MachineLearning','AIAgents','artificial'];
-const VISITED_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const DEFAULT_SUBS = [
+  'ClaudeAI',
+  'ClaudeCode',
+  'LocalLLaMA',
+  'MachineLearning',
+  'AIAgents',
+  'artificial',
+  'singularity',
+  'PromptEngineering',
+  'OpenAI',
+  'LangChain',
+  'Oobabooga',
+  'ChatGPT',
+  'ArtificialIntelligence',
+  'learnmachinelearning',
+  'datascience',
+  'StableDiffusion',
+  'programming',
+  'SoftwareEngineering',
+  'deeplearning',
+  'generativeAI',
+];
 
-// ─────────────────────────────────────────────
-// State
-// ─────────────────────────────────────────────
+const VISITED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 let state = {
   subreddits: [...DEFAULT_SUBS],
   sortMode: 'hot',
@@ -767,13 +736,11 @@ let state = {
   loading: false,
   lastFetch: null,
   error: null,
-  isOffline: false,
   cachedPosts: [],
 };
 
-// ─────────────────────────────────────────────
-// Persistence
-// ─────────────────────────────────────────────
+// ── Persistence ──────────────────────────────────────────────────────────────
+
 function loadState() {
   try {
     const subs = localStorage.getItem('subs');
@@ -782,11 +749,11 @@ function loadState() {
     if (sort) state.sortMode = sort;
     const cap = localStorage.getItem('cap');
     if (cap) state.postCap = parseInt(cap, 10);
-    const lastFetch = localStorage.getItem('lastFetch');
-    if (lastFetch) state.lastFetch = lastFetch;
-    const cachedPosts = localStorage.getItem('cachedPosts');
-    if (cachedPosts) state.cachedPosts = JSON.parse(cachedPosts);
-  } catch(e) { /* ignore */ }
+    const lf = localStorage.getItem('lastFetch');
+    if (lf) state.lastFetch = lf;
+    const cp = localStorage.getItem('cachedPosts');
+    if (cp) state.cachedPosts = JSON.parse(cp);
+  } catch(e) {}
 }
 
 function savePrefs() {
@@ -794,25 +761,24 @@ function savePrefs() {
     localStorage.setItem('subs', JSON.stringify(state.subreddits));
     localStorage.setItem('sort', state.sortMode);
     localStorage.setItem('cap', String(state.postCap));
-  } catch(e) { /* ignore */ }
+  } catch(e) {}
 }
 
 function saveCachedPosts(posts) {
   try {
     localStorage.setItem('cachedPosts', JSON.stringify(posts));
-    localStorage.setItem('lastFetch', new Date().toISOString());
-    state.lastFetch = localStorage.getItem('lastFetch');
-  } catch(e) { /* ignore */ }
+    const now = new Date().toISOString();
+    localStorage.setItem('lastFetch', now);
+    state.lastFetch = now;
+  } catch(e) {}
 }
 
-// Visited posts
 function getVisited() {
   try {
     const raw = localStorage.getItem('visited');
     if (!raw) return {};
     const data = JSON.parse(raw);
     const now = Date.now();
-    // Prune expired entries
     const pruned = {};
     for (const [id, ts] of Object.entries(data)) {
       if (now - ts < VISITED_TTL_MS) pruned[id] = ts;
@@ -823,20 +789,19 @@ function getVisited() {
 
 function markVisited(id) {
   try {
-    const visited = getVisited();
-    visited[id] = Date.now();
-    localStorage.setItem('visited', JSON.stringify(visited));
-  } catch(e) { /* ignore */ }
+    const v = getVisited();
+    v[id] = Date.now();
+    localStorage.setItem('visited', JSON.stringify(v));
+  } catch(e) {}
 }
 
 function clearVisited() {
-  try { localStorage.removeItem('visited'); } catch(e) { /* ignore */ }
+  try { localStorage.removeItem('visited'); } catch(e) {}
 }
 
-// ─────────────────────────────────────────────
-// Reddit API
-// ─────────────────────────────────────────────
-function getSortUrl(sub, sort, cap) {
+// ── Reddit API ────────────────────────────────────────────────────────────────
+
+function sortUrl(sub, sort, cap) {
   const base = `https://www.reddit.com/r/${encodeURIComponent(sub)}`;
   if (sort === 'top') return `${base}/top.json?t=week&limit=${cap}&raw_json=1`;
   if (sort === 'new') return `${base}/new.json?limit=${cap}&raw_json=1`;
@@ -857,47 +822,37 @@ function mapPost(child) {
   };
 }
 
-async function fetchSubreddit(sub, sort, cap) {
-  const url = getSortUrl(sub, sort, cap);
-  const res = await fetch(url, {
-    headers: { 'Accept': 'application/json' },
-    signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined,
-  });
-  if (!res.ok) throw new Error(`r/${sub}: HTTP ${res.status}`);
+async function fetchSub(sub, sort, cap) {
+  const url = sortUrl(sub, sort, cap);
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error(`r/${sub}: ${res.status}`);
   const json = await res.json();
   return (json.data.children || []).map(mapPost);
 }
 
 async function fetchAll() {
-  const { subreddits, sortMode, postCap } = state;
   const results = await Promise.allSettled(
-    subreddits.map(sub => fetchSubreddit(sub, sortMode, postCap))
+    state.subreddits.map(s => fetchSub(s, state.sortMode, state.postCap))
   );
-  const posts = [];
-  for (const result of results) {
-    if (result.status === 'fulfilled') posts.push(...result.value);
-  }
-  return posts;
+  return results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
 }
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 function timeAgo(utcSeconds) {
   const diff = Math.floor(Date.now() / 1000) - utcSeconds;
-  if (diff < 60) return 'now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  if (diff < 60)     return 'now';
+  if (diff < 3600)   return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400)  return `${Math.floor(diff / 3600)}h`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
   return `${Math.floor(diff / 604800)}w`;
 }
 
 function fmt(n) {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
-function escapeHtml(str) {
+function esc(str) {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -905,47 +860,42 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function formatFetchTime(iso) {
+function fetchLabel(iso) {
   if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60000)    return 'just now';
+  if (diff < 3600000)  return `${Math.floor(diff / 60000)}m ago`;
   const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now - d;
-  if (diffMs < 60000) return 'Updated just now';
-  if (diffMs < 3600000) return `Updated ${Math.floor(diffMs/60000)}m ago`;
-  return `Updated at ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// ─────────────────────────────────────────────
-// Render
-// ─────────────────────────────────────────────
-function renderSubTabs() {
-  const container = document.getElementById('sub-tabs');
-  const subs = state.subreddits;
-  const active = state.activeSubFilter;
+// ── Render ────────────────────────────────────────────────────────────────────
 
-  const tabs = [{ key: 'all', label: 'All' }, ...subs.map(s => ({ key: s, label: `r/${s}` }))];
-  container.innerHTML = tabs.map(t => `
-    <button class="sub-tab ${t.key === active ? 'active' : ''}"
-      data-sub="${escapeHtml(t.key)}"
+function renderSubTabs() {
+  const el = document.getElementById('sub-tabs');
+  const tabs = [{ key: 'all', label: 'All' }, ...state.subreddits.map(s => ({ key: s, label: s }))];
+  el.innerHTML = tabs.map(t => `
+    <button class="sub-tab ${t.key === state.activeSubFilter ? 'active' : ''}"
+      data-sub="${esc(t.key)}"
       role="tab"
-      aria-selected="${t.key === active}"
-    >${escapeHtml(t.label)}</button>
+      aria-selected="${t.key === state.activeSubFilter}"
+    >${esc(t.label)}</button>
   `).join('');
 }
 
 function renderSubList() {
-  const list = document.getElementById('sub-list');
-  list.innerHTML = state.subreddits.map((sub, i) => `
-    <li class="sub-item" data-index="${i}">
-      <div class="sub-item-name">r/${escapeHtml(sub)}</div>
-      <button class="remove-btn" data-sub="${escapeHtml(sub)}" aria-label="Remove r/${escapeHtml(sub)}">−</button>
+  const el = document.getElementById('sub-list');
+  el.innerHTML = state.subreddits.map(sub => `
+    <li class="sub-item">
+      <div class="sub-item-name">r/${esc(sub)}</div>
+      <button class="remove-btn" data-sub="${esc(sub)}" aria-label="Remove r/${esc(sub)}">-</button>
     </li>
   `).join('');
 }
 
-function renderSortButtons() {
-  document.querySelectorAll('.sort-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.sort === state.sortMode);
+function renderSortBtns() {
+  document.querySelectorAll('.sort-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.sort === state.sortMode);
   });
 }
 
@@ -958,38 +908,26 @@ function renderSettingsValues() {
 
 function renderLastFetch() {
   const el = document.getElementById('last-fetch');
-  if (el) el.textContent = formatFetchTime(state.lastFetch);
+  if (el) el.textContent = fetchLabel(state.lastFetch);
 }
 
 function buildPostCard(post, visited) {
-  const isVisited = !!visited[post.id];
   return `
-    <a class="post-card ${isVisited ? 'visited' : ''}"
-       href="${escapeHtml(post.permalink)}"
+    <a class="post-card ${visited[post.id] ? 'visited' : ''}"
+       href="${esc(post.permalink)}"
        target="_blank"
        rel="noopener noreferrer"
-       data-id="${escapeHtml(post.id)}"
-       aria-label="${escapeHtml(post.title)}"
+       data-id="${esc(post.id)}"
     >
       <div class="post-meta-top">
-        <span class="sub-tag">r/${escapeHtml(post.subreddit)}</span>
-        ${post.flair ? `<span class="post-flair">${escapeHtml(post.flair)}</span>` : ''}
-        <span class="post-age">${timeAgo(post.created)}</span>
+        <span class="sub-label">${esc(post.subreddit)}</span>
+        ${post.flair ? `<span class="post-flair">${esc(post.flair)}</span>` : ''}
       </div>
-      <div class="post-title">${escapeHtml(post.title)}</div>
+      <div class="post-title">${esc(post.title)}</div>
       <div class="post-meta-bottom">
-        <span class="post-stat">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
-          ${escapeHtml(fmt(post.score))}
-        </span>
-        <span class="post-stat">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          ${escapeHtml(fmt(post.numComments))}
-        </span>
+        <span class="post-stat">${esc(fmt(post.score))} up</span>
+        <span class="post-stat">${esc(fmt(post.numComments))} comments</span>
+        <span class="post-age">${timeAgo(post.created)}</span>
       </div>
     </a>
   `;
@@ -1002,91 +940,71 @@ function renderFeed() {
   if (state.loading) {
     container.innerHTML = `
       <div class="feed-loading">
-        <div class="spinner"></div>
-        <div>Loading posts…</div>
+        <span class="loading-pulse">Loading...</span>
       </div>
     `;
     return;
   }
 
-  let posts = state.posts.length ? state.posts : state.cachedPosts;
+  const posts = state.posts.length ? state.posts : state.cachedPosts;
   const isStale = !state.posts.length && state.cachedPosts.length > 0;
 
   if (state.error && !posts.length) {
     container.innerHTML = `
       <div class="feed-error">
-        <div class="error-icon">⚠️</div>
-        <div>${escapeHtml(state.error)}</div>
-        <div style="margin-top:8px;font-size:12px">Pull to refresh or check your connection</div>
+        ${esc(state.error)}<br>
+        Check your connection and try again.
       </div>
     `;
     return;
   }
 
   if (!posts.length) {
-    if (!state.subreddits.length) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">📋</div>
-          <h3>No subreddits added</h3>
-          <p>Go to Settings and add some subreddits to get started.</p>
-        </div>
-      `;
-    } else {
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🔄</div>
-          <h3>Nothing loaded yet</h3>
-          <p>Tap the refresh button to load posts.</p>
-        </div>
-      `;
-    }
-    return;
-  }
-
-  // Filter by active sub
-  const filtered = state.activeSubFilter === 'all'
-    ? posts
-    : posts.filter(p => p.subreddit.toLowerCase() === state.activeSubFilter.toLowerCase());
-
-  // Sort by score descending for 'all' view
-  const sorted = state.activeSubFilter === 'all'
-    ? [...filtered].sort((a, b) => b.score - a.score)
-    : filtered;
-
-  const visited = getVisited();
-  const staleHtml = isStale ? `
-    <div class="stale-banner">
-      ⚠️ Showing cached posts — tap refresh to update
-    </div>
-  ` : '';
-
-  if (!sorted.length) {
-    container.innerHTML = staleHtml + `
+    container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">🤔</div>
-        <h3>No posts found</h3>
-        <p>Nothing from r/${escapeHtml(state.activeSubFilter)} right now.</p>
+        <h3>${state.subreddits.length ? 'Nothing loaded yet' : 'No subreddits added'}</h3>
+        <p>${state.subreddits.length ? 'Tap Refresh to load posts.' : 'Go to Settings and add subreddits.'}</p>
       </div>
     `;
     return;
   }
 
-  const cards = sorted.map(p => buildPostCard(p, visited)).join('');
+  const filtered = state.activeSubFilter === 'all'
+    ? posts
+    : posts.filter(p => p.subreddit.toLowerCase() === state.activeSubFilter.toLowerCase());
+
+  const sorted = state.activeSubFilter === 'all'
+    ? [...filtered].sort((a, b) => b.score - a.score)
+    : filtered;
+
+  const visited = getVisited();
+  const staleHtml = isStale
+    ? `<div class="stale-notice">Offline — showing cached posts</div>`
+    : '';
+
+  if (!sorted.length) {
+    container.innerHTML = staleHtml + `
+      <div class="empty-state">
+        <h3>No posts found</h3>
+        <p>Nothing from r/${esc(state.activeSubFilter)} right now.</p>
+      </div>
+    `;
+    return;
+  }
+
   const subLabel = state.activeSubFilter === 'all' ? 'all subreddits' : `r/${state.activeSubFilter}`;
-  const endMsg = `
+  const endHtml = `
     <div class="feed-end">
-      <div class="feed-end-count">✓ ${sorted.length} post${sorted.length !== 1 ? 's' : ''} loaded</div>
-      <div class="feed-end-sub">You've reached the end of ${escapeHtml(subLabel)}. Tap refresh for new content.</div>
+      <div class="feed-end-count">${sorted.length} post${sorted.length !== 1 ? 's' : ''}</div>
+      <div class="feed-end-msg">End of ${esc(subLabel)}. Tap Refresh for new content.</div>
     </div>
   `;
 
-  container.innerHTML = staleHtml + cards + endMsg;
+  container.innerHTML = staleHtml + sorted.map(p => buildPostCard(p, visited)).join('') + endHtml;
 }
 
-// ─────────────────────────────────────────────
-// Actions
-// ─────────────────────────────────────────────
+// ── Actions ───────────────────────────────────────────────────────────────────
+
 async function refresh() {
   if (state.loading) return;
   state.loading = true;
@@ -1101,10 +1019,7 @@ async function refresh() {
     state.cachedPosts = posts;
     saveCachedPosts(posts);
   } catch(e) {
-    state.error = e.message || 'Failed to load posts';
-    if (state.cachedPosts.length) {
-      state.isOffline = true;
-    }
+    state.error = e.message || 'Failed to load posts.';
   } finally {
     state.loading = false;
     if (btn) btn.classList.remove('refreshing');
@@ -1116,22 +1031,19 @@ function switchView(view) {
   state.currentView = view;
   document.getElementById('feed-view').classList.toggle('hidden', view !== 'feed');
   document.getElementById('settings-view').classList.toggle('hidden', view !== 'settings');
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    const active = btn.dataset.view === view;
-    btn.classList.toggle('active', active);
-    btn.setAttribute('aria-selected', active);
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const active = b.dataset.view === view;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-selected', active);
   });
-  if (view === 'settings') {
-    renderSubList();
-    renderSettingsValues();
-  }
+  if (view === 'settings') { renderSubList(); renderSettingsValues(); }
 }
 
 function setSort(sort) {
   state.sortMode = sort;
   state.posts = [];
   savePrefs();
-  renderSortButtons();
+  renderSortBtns();
   renderSettingsValues();
   refresh();
 }
@@ -1142,46 +1054,44 @@ function setSubFilter(sub) {
   renderFeed();
 }
 
-async function addSubreddit(name) {
-  name = name.trim().replace(/^\/?(r\/)?/i, '').replace(/\/$/, '');
+async function addSubreddit(raw) {
+  const name = raw.trim().replace(/^\/?(r\/)?/i, '').replace(/\/$/, '');
   if (!name) return;
 
   const errEl = document.getElementById('add-error');
   const addBtn = document.getElementById('add-sub-btn');
 
   if (state.subreddits.map(s => s.toLowerCase()).includes(name.toLowerCase())) {
-    showAddError('Already in your list');
+    showAddError('Already in your list.');
     return;
   }
 
   addBtn.disabled = true;
-  addBtn.textContent = '…';
+  addBtn.textContent = '...';
   hideAddError();
 
   try {
-    // Validate subreddit exists
     const res = await fetch(`https://www.reddit.com/r/${encodeURIComponent(name)}/about.json?raw_json=1`);
-    if (!res.ok) throw new Error('Subreddit not found');
+    if (!res.ok) throw new Error('Subreddit not found.');
     const json = await res.json();
-    if (json.kind !== 't5') throw new Error('Not a valid subreddit');
+    if (json.kind !== 't5') throw new Error('Not a valid subreddit.');
 
-    // Use the canonical name from Reddit
     const canonical = json.data.display_name || name;
     state.subreddits.push(canonical);
     savePrefs();
     document.getElementById('add-sub-input').value = '';
     renderSubList();
     renderSubTabs();
-    // Fetch new subreddit posts and merge
+
     try {
-      const newPosts = await fetchSubreddit(canonical, state.sortMode, state.postCap);
+      const newPosts = await fetchSub(canonical, state.sortMode, state.postCap);
       state.posts = [...state.posts, ...newPosts];
       state.cachedPosts = state.posts;
       saveCachedPosts(state.posts);
       renderFeed();
-    } catch(e) { /* silent */ }
+    } catch(e) {}
   } catch(e) {
-    showAddError(e.message || 'Could not find that subreddit');
+    showAddError(e.message || 'Could not find that subreddit.');
   } finally {
     addBtn.disabled = false;
     addBtn.textContent = 'Add';
@@ -1192,9 +1102,7 @@ function removeSubreddit(name) {
   state.subreddits = state.subreddits.filter(s => s.toLowerCase() !== name.toLowerCase());
   state.posts = state.posts.filter(p => p.subreddit.toLowerCase() !== name.toLowerCase());
   state.cachedPosts = state.cachedPosts.filter(p => p.subreddit.toLowerCase() !== name.toLowerCase());
-  if (state.activeSubFilter.toLowerCase() === name.toLowerCase()) {
-    state.activeSubFilter = 'all';
-  }
+  if (state.activeSubFilter.toLowerCase() === name.toLowerCase()) state.activeSubFilter = 'all';
   savePrefs();
   saveCachedPosts(state.cachedPosts);
   renderSubList();
@@ -1209,17 +1117,18 @@ function showAddError(msg) {
 }
 
 function hideAddError() {
-  const el = document.getElementById('add-error');
-  el.classList.add('hidden');
+  document.getElementById('add-error').classList.add('hidden');
 }
 
 function exportSubs() {
-  const data = { subreddits: state.subreddits, exported: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const blob = new Blob(
+    [JSON.stringify({ subreddits: state.subreddits, exported: new Date().toISOString() }, null, 2)],
+    { type: 'application/json' }
+  );
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'ai-reader-subreddits.json';
+  a.download = 'ai-reader-subs.json';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1229,7 +1138,7 @@ function importSubs(file) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!Array.isArray(data.subreddits)) throw new Error('Invalid format');
+      if (!Array.isArray(data.subreddits)) throw new Error('Invalid format.');
       state.subreddits = data.subreddits;
       savePrefs();
       renderSubList();
@@ -1237,52 +1146,45 @@ function importSubs(file) {
       state.posts = [];
       refresh();
     } catch(err) {
-      alert('Could not import: ' + err.message);
+      alert('Import failed: ' + err.message);
     }
   };
   reader.readAsText(file);
 }
 
-// ─────────────────────────────────────────────
-// Install Banner
-// ─────────────────────────────────────────────
-function shouldShowInstallBanner() {
+// ── Install Banner ────────────────────────────────────────────────────────────
+
+function shouldShowBanner() {
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|opios|chrome/i.test(navigator.userAgent);
+  const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|chrome/i.test(navigator.userAgent);
   const isStandalone = window.navigator.standalone === true;
-  const isDismissed = localStorage.getItem('installBannerDismissed') === '1';
-  return isIOS && isSafari && !isStandalone && !isDismissed;
+  const dismissed = localStorage.getItem('bannerDismissed') === '1';
+  return isIOS && isSafari && !isStandalone && !dismissed;
 }
 
-function showInstallBanner() {
-  const el = document.getElementById('install-banner');
-  if (el) el.classList.remove('hidden');
-}
+// ── Event Binding ─────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────
-// Event Binding
-// ─────────────────────────────────────────────
 function bindEvents() {
-  // Tab navigation
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  // Nav tabs
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.addEventListener('click', () => switchView(b.dataset.view));
   });
 
-  // Sort buttons
-  document.querySelectorAll('.sort-btn').forEach(btn => {
-    btn.addEventListener('click', () => setSort(btn.dataset.sort));
+  // Sort
+  document.querySelectorAll('.sort-btn').forEach(b => {
+    b.addEventListener('click', () => setSort(b.dataset.sort));
   });
 
-  // Sub filter tabs (delegated)
+  // Subreddit filter tabs (delegated)
   document.getElementById('sub-tabs').addEventListener('click', e => {
-    const tab = e.target.closest('.sub-tab');
-    if (tab) setSubFilter(tab.dataset.sub);
+    const t = e.target.closest('.sub-tab');
+    if (t) setSubFilter(t.dataset.sub);
   });
 
   // Post click → mark visited (delegated)
   document.getElementById('feed').addEventListener('click', e => {
     const card = e.target.closest('.post-card');
-    if (card && card.dataset.id) {
+    if (card?.dataset.id) {
       markVisited(card.dataset.id);
       card.classList.add('visited');
     }
@@ -1291,87 +1193,77 @@ function bindEvents() {
   // Refresh
   document.getElementById('refresh-btn').addEventListener('click', refresh);
 
-  // Settings: post cap
+  // Settings
   document.getElementById('cap-select').addEventListener('change', e => {
     state.postCap = parseInt(e.target.value, 10);
     savePrefs();
   });
 
-  // Settings: sort
   document.getElementById('sort-select').addEventListener('change', e => {
     state.sortMode = e.target.value;
     savePrefs();
-    renderSortButtons();
+    renderSortBtns();
   });
 
-  // Settings: clear visited
   document.getElementById('clear-visited-btn').addEventListener('click', () => {
     clearVisited();
     renderFeed();
   });
 
-  // Sub list: remove (delegated)
+  // Sub list remove (delegated)
   document.getElementById('sub-list').addEventListener('click', e => {
-    const btn = e.target.closest('.remove-btn');
-    if (btn) removeSubreddit(btn.dataset.sub);
+    const b = e.target.closest('.remove-btn');
+    if (b) removeSubreddit(b.dataset.sub);
   });
 
   // Add subreddit
-  const addInput = document.getElementById('add-sub-input');
-  const addBtn = document.getElementById('add-sub-btn');
-
-  addBtn.addEventListener('click', () => addSubreddit(addInput.value));
-  addInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') addSubreddit(addInput.value);
-    if (e.key !== 'Enter') hideAddError();
+  const input = document.getElementById('add-sub-input');
+  document.getElementById('add-sub-btn').addEventListener('click', () => addSubreddit(input.value));
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addSubreddit(input.value);
+    else hideAddError();
   });
 
-  // Export
+  // Export / Import
   document.getElementById('export-btn').addEventListener('click', exportSubs);
-
-  // Import
+  document.getElementById('export-btn').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') exportSubs();
+  });
   document.getElementById('import-input').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (file) importSubs(file);
+    if (e.target.files[0]) importSubs(e.target.files[0]);
     e.target.value = '';
   });
 
   // Install banner dismiss
   document.getElementById('dismiss-banner').addEventListener('click', () => {
     document.getElementById('install-banner').classList.add('hidden');
-    localStorage.setItem('installBannerDismissed', '1');
+    localStorage.setItem('bannerDismissed', '1');
   });
 }
 
-// ─────────────────────────────────────────────
-// Service Worker
-// ─────────────────────────────────────────────
+// ── Service Worker ────────────────────────────────────────────────────────────
+
 function registerSW() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }
 
-// ─────────────────────────────────────────────
-// Boot
-// ─────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
 function boot() {
   loadState();
   bindEvents();
   renderSubTabs();
-  renderSortButtons();
+  renderSortBtns();
   renderFeed();
   registerSW();
 
-  if (shouldShowInstallBanner()) {
-    // Small delay so it doesn't flash immediately
-    setTimeout(showInstallBanner, 1500);
-  }
+  if (shouldShowBanner()) setTimeout(() => {
+    document.getElementById('install-banner').classList.remove('hidden');
+  }, 1500);
 
-  // Auto-load on first open if we have subs but no cached posts
-  if (state.subreddits.length && !state.cachedPosts.length) {
-    refresh();
-  }
+  if (state.subreddits.length && !state.cachedPosts.length) refresh();
 }
 
 document.addEventListener('DOMContentLoaded', boot);
