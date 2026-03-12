@@ -169,22 +169,25 @@
       gap: 20px;
     }
 
-    .hide-seen-btn {
-      margin-left: auto;
+    .post-hide-btn {
+      position: absolute;
+      top: 12px;
+      right: 16px;
       background: none;
       border: none;
       color: var(--text-3);
-      font-size: 11px;
-      font-weight: 500;
+      font-size: 18px;
+      line-height: 1;
       cursor: pointer;
-      padding: 0;
-      font-family: inherit;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      transition: color .15s;
+      padding: 2px 4px;
+      opacity: 0;
+      transition: opacity .15s, color .15s;
     }
 
-    .hide-seen-btn.active { color: var(--accent); }
+    .post-card { position: relative; }
+    .post-card:hover .post-hide-btn,
+    .post-card:focus-within .post-hide-btn { opacity: 1; }
+    .post-hide-btn:hover { color: var(--text); }
 
     /* ── Period Row (shown when sort=top) ── */
     .period-row {
@@ -676,7 +679,6 @@
           <button class="sort-btn" data-sort="top">Top</button>
           <button class="sort-btn" data-sort="new">New</button>
         </div>
-        <button class="hide-seen-btn active" id="hide-seen-btn">Hide seen</button>
       </div>
       <div class="period-row hidden" id="period-row">
         <button class="period-btn" data-period="day">Day</button>
@@ -717,6 +719,10 @@
             <option value="top">Top</option>
             <option value="new">New</option>
           </select>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Hide seen posts</span>
+          <button class="action-btn" id="hide-seen-btn">On</button>
         </div>
         <div class="settings-row">
           <span class="settings-label">Clear visited posts</span>
@@ -1057,8 +1063,8 @@ function renderTopPeriodRow() {
 function renderHideSeenBtn() {
   const btn = document.getElementById('hide-seen-btn');
   if (!btn) return;
-  btn.classList.toggle('active', state.hideSeen);
-  btn.textContent = state.hideSeen ? 'Hide seen' : 'Show all';
+  btn.textContent = state.hideSeen ? 'On' : 'Off';
+  btn.style.color = state.hideSeen ? 'var(--accent)' : '';
 }
 
 function renderSettingsValues() {
@@ -1081,6 +1087,7 @@ function buildPostCard(post, visited) {
        rel="noopener noreferrer"
        data-id="${esc(post.id)}"
     >
+      <button class="post-hide-btn" data-hide="${esc(post.id)}" aria-label="Hide post" tabindex="-1">×</button>
       <div class="post-meta-top">
         <span class="sub-label">${esc(post.subreddit)}</span>
         ${post.flair ? `<span class="post-flair">${esc(post.flair)}</span>` : ''}
@@ -1180,7 +1187,6 @@ function renderFeed() {
 
 async function refresh() {
   if (state.loading) return;
-  const prevPosts = state.posts.slice();
   state.loading = true;
   state.error = null;
   const btn = document.getElementById('refresh-btn');
@@ -1189,7 +1195,6 @@ async function refresh() {
 
   try {
     const posts = await fetchAll();
-    markSeen(prevPosts);
     state.posts = posts;
     state.cachedPosts = posts;
     saveCachedPosts(posts);
@@ -1380,11 +1385,25 @@ function bindEvents() {
     if (t) setSubFilter(t.dataset.sub);
   });
 
-  // Post click → mark visited (delegated)
+  // Post click / hide button (delegated)
   document.getElementById('feed').addEventListener('click', e => {
+    const hideBtn = e.target.closest('.post-hide-btn');
+    if (hideBtn) {
+      e.preventDefault();
+      const id = hideBtn.dataset.hide;
+      markVisited(id);
+      markSeen([{ id }]);
+      if (state.hideSeen) {
+        renderFeed();
+      } else {
+        hideBtn.closest('.post-card')?.classList.add('visited');
+      }
+      return;
+    }
     const card = e.target.closest('.post-card');
     if (card?.dataset.id) {
       markVisited(card.dataset.id);
+      markSeen([{ id: card.dataset.id }]);
       card.classList.add('visited');
     }
   });
