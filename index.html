@@ -169,6 +169,33 @@
       gap: 20px;
     }
 
+    /* ── Swipe wrapper ── */
+    .card-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .swipe-reveal {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      pointer-events: none;
+      transition: opacity .1s;
+    }
+
+    .swipe-reveal-left  { background: #3b1212; color: #e06060; padding-right: 24px; justify-content: flex-end; }
+    .swipe-reveal-right { background: #0d2a1a; color: #60c090; padding-left:  24px; justify-content: flex-start; }
+
+    /* ── Post card ── */
+    .post-card { position: relative; background: var(--bg); }
+    .post-card:hover .post-hide-btn,
+    .post-card:focus-within .post-hide-btn { opacity: 1; }
+
     .post-hide-btn {
       position: absolute;
       top: 12px;
@@ -184,10 +211,48 @@
       transition: opacity .15s, color .15s;
     }
 
-    .post-card { position: relative; }
-    .post-card:hover .post-hide-btn,
-    .post-card:focus-within .post-hide-btn { opacity: 1; }
     .post-hide-btn:hover { color: var(--text); }
+
+    /* ── Score bar ── */
+    .score-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: var(--accent);
+      opacity: .45;
+      min-width: 3px;
+      pointer-events: none;
+    }
+
+    /* ── New-posts badge ── */
+    .new-badge {
+      position: sticky;
+      top: 8px;
+      z-index: 20;
+      margin: 10px auto 0;
+      width: fit-content;
+      background: var(--accent);
+      color: #0f0f10;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      display: block;
+      animation: rise .2s ease;
+    }
+
+    /* ── Bookmark indicator ── */
+    .bookmark-star {
+      color: var(--accent);
+      font-size: 11px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
 
     /* ── Period Row (shown when sort=top) ── */
     .period-row {
@@ -776,9 +841,21 @@
 
   </div>
 
+  <!-- Saved View -->
+  <div id="saved-view" class="view hidden">
+    <div class="header">
+      <div class="header-top">
+        <span class="header-title">Saved</span>
+        <span id="saved-count" class="last-fetch"></span>
+      </div>
+    </div>
+    <div id="saved" role="main"></div>
+  </div>
+
   <!-- Bottom Nav -->
   <nav class="tab-bar" role="navigation">
     <button class="tab-btn active" data-view="feed" id="tab-feed">Feed</button>
+    <button class="tab-btn" data-view="saved" id="tab-saved">Saved</button>
     <button class="tab-btn" data-view="settings" id="tab-settings">Settings</button>
   </nav>
 
@@ -833,6 +910,8 @@ let state = {
   lastFetch: null,
   error: null,
   cachedPosts: [],
+  bookmarks: [],
+  newPostIds: new Set(),
 };
 
 // ── Persistence ──────────────────────────────────────────────────────────────
@@ -853,6 +932,8 @@ function loadState() {
     if (lf) state.lastFetch = lf;
     const cp = localStorage.getItem('cachedPosts');
     if (cp) state.cachedPosts = JSON.parse(cp);
+    const bk = localStorage.getItem('bookmarks');
+    if (bk) state.bookmarks = JSON.parse(bk);
   } catch(e) {}
 }
 
@@ -949,6 +1030,67 @@ function markSeen(posts) {
 
 function clearSeen() {
   try { localStorage.removeItem('seen'); } catch(e) {}
+}
+
+// ── Bookmarks ─────────────────────────────────────────────────────────────────
+
+function saveBookmarks() {
+  safeSetItem('bookmarks', JSON.stringify(state.bookmarks));
+}
+
+function isBookmarked(id) {
+  return state.bookmarks.some(p => p.id === id);
+}
+
+function toggleBookmark(post) {
+  if (isBookmarked(post.id)) {
+    state.bookmarks = state.bookmarks.filter(p => p.id !== post.id);
+  } else {
+    state.bookmarks = [post, ...state.bookmarks];
+  }
+  saveBookmarks();
+}
+
+function renderSaved() {
+  const container = document.getElementById('saved');
+  const countEl = document.getElementById('saved-count');
+  if (countEl) countEl.textContent = state.bookmarks.length ? `${state.bookmarks.length}` : '';
+
+  if (!state.bookmarks.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Nothing saved yet</h3>
+        <p>Swipe right on any post to save it here.</p>
+      </div>
+    `;
+    return;
+  }
+  const visited = getVisited();
+  const maxScore = Math.max(...state.bookmarks.map(p => p.score));
+  container.innerHTML = state.bookmarks.map(p => buildPostCard(p, visited, maxScore, true)).join('');
+}
+
+// ── New-posts badge ───────────────────────────────────────────────────────────
+
+function renderNewBadge() {
+  const feed = document.getElementById('feed');
+  const existing = document.getElementById('new-badge');
+  if (!state.newPostIds.size) {
+    existing?.remove();
+    return;
+  }
+  const badge = existing || document.createElement('button');
+  badge.id = 'new-badge';
+  badge.className = 'new-badge';
+  badge.textContent = `↑ ${state.newPostIds.size} new`;
+  badge.onclick = () => {
+    state.newPostIds = new Set();
+    badge.remove();
+    document.getElementById('feed-view').scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  if (!existing) feed.prepend(badge);
+  clearTimeout(badge._t);
+  badge._t = setTimeout(() => { state.newPostIds = new Set(); badge.remove(); }, 6000);
 }
 
 // ── Reddit API ────────────────────────────────────────────────────────────────
@@ -1079,26 +1221,35 @@ function renderLastFetch() {
   if (el) el.textContent = fetchLabel(state.lastFetch);
 }
 
-function buildPostCard(post, visited) {
+function buildPostCard(post, visited, maxScore = 0, inSaved = false) {
+  const scoreRatio = maxScore > 0 ? Math.min(post.score / maxScore, 1) : 0;
+  const leftLabel  = inSaved ? '✕ Remove' : '✕ Hide';
+  const rightLabel = inSaved ? '' : (isBookmarked(post.id) ? '★ Saved' : '★ Save');
   return `
-    <a class="post-card ${visited[post.id] ? 'visited' : ''}"
-       href="${esc(post.permalink)}"
-       target="_blank"
-       rel="noopener noreferrer"
-       data-id="${esc(post.id)}"
-    >
-      <button class="post-hide-btn" data-hide="${esc(post.id)}" aria-label="Hide post" tabindex="-1">×</button>
-      <div class="post-meta-top">
-        <span class="sub-label">${esc(post.subreddit)}</span>
-        ${post.flair ? `<span class="post-flair">${esc(post.flair)}</span>` : ''}
-      </div>
-      <div class="post-title">${esc(post.title)}</div>
-      <div class="post-meta-bottom">
-        <span class="post-stat">${esc(fmt(post.score))} up</span>
-        <span class="post-stat">${esc(fmt(post.numComments))} comments</span>
-        <span class="post-age">${timeAgo(post.created)}</span>
-      </div>
-    </a>
+    <div class="card-wrap">
+      <div class="swipe-reveal swipe-reveal-left">${esc(leftLabel)}</div>
+      ${rightLabel ? `<div class="swipe-reveal swipe-reveal-right">${esc(rightLabel)}</div>` : ''}
+      <a class="post-card ${visited[post.id] ? 'visited' : ''}"
+         href="${esc(post.permalink)}"
+         target="_blank"
+         rel="noopener noreferrer"
+         data-id="${esc(post.id)}"
+      >
+        <button class="post-hide-btn" data-hide="${esc(post.id)}" aria-label="Hide post" tabindex="-1">×</button>
+        <div class="post-meta-top">
+          <span class="sub-label">${esc(post.subreddit)}</span>
+          ${post.flair ? `<span class="post-flair">${esc(post.flair)}</span>` : ''}
+          ${isBookmarked(post.id) ? '<span class="bookmark-star">★</span>' : ''}
+        </div>
+        <div class="post-title">${esc(post.title)}</div>
+        <div class="post-meta-bottom">
+          <span class="post-stat">${esc(fmt(post.score))} up</span>
+          <span class="post-stat">${esc(fmt(post.numComments))} comments</span>
+          <span class="post-age">${timeAgo(post.created)}</span>
+        </div>
+        ${scoreRatio > 0 ? `<div class="score-bar" style="width:${(scoreRatio * 100).toFixed(1)}%"></div>` : ''}
+      </a>
+    </div>
   `;
 }
 
@@ -1152,6 +1303,7 @@ function renderFeed() {
     : withSeenFilter;
 
   const visited = getVisited();
+  const maxScore = sorted.length ? Math.max(...sorted.map(p => p.score)) : 0;
   const staleHtml = isStale
     ? `<div class="stale-notice">Offline — showing cached posts</div>`
     : '';
@@ -1180,13 +1332,15 @@ function renderFeed() {
     </div>
   `;
 
-  container.innerHTML = staleHtml + sorted.map(p => buildPostCard(p, visited)).join('') + endHtml;
+  container.innerHTML = staleHtml + sorted.map(p => buildPostCard(p, visited, maxScore)).join('') + endHtml;
+  renderNewBadge();
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 async function refresh() {
   if (state.loading) return;
+  const prevIds = new Set(state.posts.map(p => p.id));
   state.loading = true;
   state.error = null;
   const btn = document.getElementById('refresh-btn');
@@ -1195,6 +1349,9 @@ async function refresh() {
 
   try {
     const posts = await fetchAll();
+    if (prevIds.size) {
+      state.newPostIds = new Set(posts.filter(p => !prevIds.has(p.id)).map(p => p.id));
+    }
     state.posts = posts;
     state.cachedPosts = posts;
     saveCachedPosts(posts);
@@ -1210,6 +1367,7 @@ async function refresh() {
 function switchView(view) {
   state.currentView = view;
   document.getElementById('feed-view').classList.toggle('hidden', view !== 'feed');
+  document.getElementById('saved-view').classList.toggle('hidden', view !== 'saved');
   document.getElementById('settings-view').classList.toggle('hidden', view !== 'settings');
   document.querySelectorAll('.tab-btn').forEach(b => {
     const active = b.dataset.view === view;
@@ -1217,6 +1375,7 @@ function switchView(view) {
     b.setAttribute('aria-selected', active);
   });
   if (view === 'settings') { renderSubList(); renderSettingsValues(); }
+  if (view === 'saved') renderSaved();
 }
 
 function setSort(sort) {
@@ -1386,17 +1545,19 @@ function bindEvents() {
   });
 
   // Post click / hide button (delegated)
-  document.getElementById('feed').addEventListener('click', e => {
+  function handleFeedClick(e, inSaved) {
     const hideBtn = e.target.closest('.post-hide-btn');
     if (hideBtn) {
       e.preventDefault();
       const id = hideBtn.dataset.hide;
-      markVisited(id);
-      markSeen([{ id }]);
-      if (state.hideSeen) {
-        renderFeed();
+      if (inSaved) {
+        const post = state.bookmarks.find(p => p.id === id);
+        if (post) { toggleBookmark(post); renderSaved(); }
       } else {
-        hideBtn.closest('.post-card')?.classList.add('visited');
+        markVisited(id);
+        markSeen([{ id }]);
+        if (state.hideSeen) renderFeed();
+        else hideBtn.closest('.post-card')?.classList.add('visited');
       }
       return;
     }
@@ -1406,6 +1567,68 @@ function bindEvents() {
       markSeen([{ id: card.dataset.id }]);
       card.classList.add('visited');
     }
+  }
+
+  document.getElementById('feed').addEventListener('click', e => handleFeedClick(e, false));
+  document.getElementById('saved').addEventListener('click', e => handleFeedClick(e, true));
+
+  // Swipe gestures (feed + saved)
+  let swipe = null;
+  function onTouchStart(e) {
+    const wrap = e.target.closest('.card-wrap');
+    if (!wrap) return;
+    swipe = { wrap, card: wrap.querySelector('.post-card'), x0: e.touches[0].clientX, y0: e.touches[0].clientY, axis: null, action: null };
+  }
+  function onTouchMove(e) {
+    if (!swipe) return;
+    const dx = e.touches[0].clientX - swipe.x0;
+    const dy = e.touches[0].clientY - swipe.y0;
+    if (!swipe.axis) {
+      if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) swipe.axis = 'h';
+      else if (Math.abs(dy) > 6) { swipe = null; return; }
+      else return;
+    }
+    e.preventDefault();
+    const THRESHOLD = 72;
+    swipe.card.style.cssText = `transition:none;transform:translateX(${dx}px)`;
+    swipe.action = dx < -THRESHOLD ? 'left' : dx > THRESHOLD ? 'right' : null;
+  }
+  function onTouchEnd(e) {
+    if (!swipe || !swipe.axis) { swipe = null; return; }
+    const { card, wrap, action } = swipe;
+    const id = card.dataset.id;
+    const inSaved = state.currentView === 'saved';
+    swipe = null;
+    if (action === 'left') {
+      card.style.cssText = 'transition:transform .18s ease-out,opacity .18s;transform:translateX(-110%);opacity:0';
+      navigator.vibrate?.(6);
+      setTimeout(() => {
+        if (inSaved) {
+          const post = state.bookmarks.find(p => p.id === id);
+          if (post) { toggleBookmark(post); renderSaved(); }
+        } else {
+          markVisited(id); markSeen([{ id }]);
+          if (state.hideSeen) renderFeed();
+          else { card.style.cssText = ''; card.classList.add('visited'); }
+        }
+      }, 180);
+    } else if (action === 'right' && !inSaved) {
+      const post = (state.posts.length ? state.posts : state.cachedPosts).find(p => p.id === id);
+      if (post) {
+        navigator.vibrate?.(6);
+        card.style.cssText = 'transition:transform .18s ease-out,opacity .18s;transform:translateX(110%);opacity:0';
+        setTimeout(() => { toggleBookmark(post); renderFeed(); }, 180);
+      } else {
+        card.style.cssText = 'transition:transform .25s ease;transform:none';
+      }
+    } else {
+      card.style.cssText = 'transition:transform .25s ease;transform:none';
+    }
+  }
+  [document.getElementById('feed'), document.getElementById('saved')].forEach(el => {
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    el.addEventListener('touchend',   onTouchEnd,   { passive: true });
   });
 
   // Refresh
