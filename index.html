@@ -869,25 +869,51 @@ function saveCachedPosts(posts) {
   } catch(e) {}
 }
 
-function getVisited() {
+// Write to localStorage, evicting seen history if quota is exceeded.
+function safeSetItem(key, value) {
   try {
-    const raw = localStorage.getItem('visited');
+    localStorage.setItem(key, value);
+  } catch(e) {
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      try {
+        localStorage.removeItem('seen'); // largest store; drop it to make room
+        localStorage.setItem(key, value);
+      } catch(e2) {}
+    }
+  }
+}
+
+// Parse a TTL-keyed map from localStorage, pruning expired entries.
+// Saves the pruned result back so stale entries don't accumulate.
+function loadTtlMap(key, ttlMs) {
+  try {
+    const raw = localStorage.getItem(key);
     if (!raw) return {};
     const data = JSON.parse(raw);
     const now = Date.now();
     const pruned = {};
+    let changed = false;
     for (const [id, ts] of Object.entries(data)) {
-      if (now - ts < VISITED_TTL_MS) pruned[id] = ts;
+      if (now - ts < ttlMs) {
+        pruned[id] = ts;
+      } else {
+        changed = true;
+      }
     }
+    if (changed) safeSetItem(key, JSON.stringify(pruned));
     return pruned;
   } catch(e) { return {}; }
+}
+
+function getVisited() {
+  return loadTtlMap('visited', VISITED_TTL_MS);
 }
 
 function markVisited(id) {
   try {
     const v = getVisited();
     v[id] = Date.now();
-    localStorage.setItem('visited', JSON.stringify(v));
+    safeSetItem('visited', JSON.stringify(v));
   } catch(e) {}
 }
 
@@ -896,17 +922,7 @@ function clearVisited() {
 }
 
 function getSeenIds() {
-  try {
-    const raw = localStorage.getItem('seen');
-    if (!raw) return {};
-    const data = JSON.parse(raw);
-    const now = Date.now();
-    const pruned = {};
-    for (const [id, ts] of Object.entries(data)) {
-      if (now - ts < SEEN_TTL_MS) pruned[id] = ts;
-    }
-    return pruned;
-  } catch(e) { return {}; }
+  return loadTtlMap('seen', SEEN_TTL_MS);
 }
 
 function markSeen(posts) {
@@ -914,8 +930,14 @@ function markSeen(posts) {
     if (!posts.length) return;
     const seen = getSeenIds();
     const now = Date.now();
-    for (const p of posts) seen[p.id] = now;
-    localStorage.setItem('seen', JSON.stringify(seen));
+    let changed = false;
+    for (const p of posts) {
+      if (!seen[p.id]) { // preserve original first-seen time; don't reset TTL on re-mark
+        seen[p.id] = now;
+        changed = true;
+      }
+    }
+    if (changed) safeSetItem('seen', JSON.stringify(seen));
   } catch(e) {}
 }
 
