@@ -1,7 +1,7 @@
 // AI Reader — Service Worker
 // Caches the app shell for offline use; serves Reddit API calls from network with cache fallback.
 
-const CACHE_NAME = 'ai-reader-v2';
+const CACHE_NAME = 'ai-reader-v3';
 const SHELL = [
   './',
   './index.html',
