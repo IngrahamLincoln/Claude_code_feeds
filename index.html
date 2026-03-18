@@ -926,11 +926,7 @@ const DEFAULT_SUBS = [
   'startups',          // real problems, real scars
 ];
 
-const CORS_PROXIES = [
-  'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
-  'https://cors.workers.dev/?',
-];
+const CORS_PROXIES = [];
 
 const NEWSLETTER_FEEDS = [
   { key: 'simonwillison', label: 'Simon Willison',  url: 'https://simonwillison.net/atom/everything/' },
@@ -1289,86 +1285,6 @@ function stripHtml(html) {
   return (el.textContent || el.innerText || '').trim();
 }
 
-function parseNlItems(xmlText, feed) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlText, 'application/xml');
-  if (doc.querySelector('parsererror')) {
-    throw new Error(`${feed.label}: XML parse error`);
-  }
-  // If the root element is <html> the proxy returned an error page
-  const root = doc.documentElement?.tagName?.toLowerCase();
-  if (root === 'html' || root === 'body') {
-    throw new Error(`${feed.label}: got HTML instead of XML`);
-  }
-  const isAtom = root === 'feed' || !!doc.querySelector('feed');
-  const nodes = isAtom ? doc.querySelectorAll('entry') : doc.querySelectorAll('item');
-  const items = [];
-  for (const node of nodes) {
-    let url = '';
-    if (isAtom) {
-      url = node.querySelector('link[rel="alternate"]')?.getAttribute('href')
-         || node.querySelector('link:not([rel])')?.getAttribute('href')
-         || node.querySelector('link')?.getAttribute('href') || '';
-    } else {
-      url = node.querySelector('link')?.textContent?.trim() || '';
-    }
-    const idNode = isAtom ? node.querySelector('id') : node.querySelector('guid');
-    const id = idNode?.textContent?.trim() || url;
-    if (!id) continue;
-    const title = node.querySelector('title')?.textContent?.trim() || '(no title)';
-    const dateStr = isAtom
-      ? (node.querySelector('published')?.textContent || node.querySelector('updated')?.textContent || '')
-      : (node.querySelector('pubDate')?.textContent || '');
-    const published = dateStr ? Math.floor(new Date(dateStr.trim()).getTime() / 1000) : 0;
-    const rawContent = isAtom
-      ? (node.querySelector('content')?.textContent || node.querySelector('summary')?.textContent || '')
-      : (node.querySelector('description')?.textContent || '');
-    const summary = stripHtml(rawContent).replace(/\s+/g, ' ').slice(0, 220);
-    items.push({ id, title, feedKey: feed.key, url, published, summary });
-  }
-  return items;
-}
-
-async function fetchNlFeed(feed) {
-  // 1. Try direct (GitHub raw, some Substacks, Simon Willison all send CORS headers)
-  try {
-    const direct = await fetch(feed.url);
-    if (direct.ok) {
-      const items = parseNlItems(await direct.text(), feed);
-      if (items.length > 0) return items;
-    }
-  } catch(e) { /* CORS-blocked or bad XML — continue */ }
-
-  // 2. rss2json.com — handles CORS natively, more reliable than raw proxies
-  try {
-    const r2j = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
-    if (r2j.ok) {
-      const data = await r2j.json();
-      if (data.status === 'ok' && data.items?.length) {
-        return data.items.map(item => ({
-          id: item.guid || item.link || item.title,
-          title: item.title || '(no title)',
-          feedKey: feed.key,
-          url: item.link || '',
-          published: item.pubDate ? Math.floor(new Date(item.pubDate).getTime() / 1000) : 0,
-          summary: stripHtml(item.description || item.content || '').replace(/\s+/g, ' ').slice(0, 220),
-        }));
-      }
-    }
-  } catch(e) { /* continue to CORS proxies */ }
-
-  // 3. CORS proxy round-robin fallback
-  let lastErr;
-  for (const proxy of CORS_PROXIES) {
-    try {
-      const res = await fetch(proxy + encodeURIComponent(feed.url));
-      if (res.ok) return parseNlItems(await res.text(), feed);
-      lastErr = new Error(`HTTP ${res.status}`);
-    } catch(e) { lastErr = e; }
-  }
-  throw lastErr || new Error('All methods failed');
-}
-
 async function refreshScreamsheet() {
   if (state.nlLoading) return;
   state.nlLoading = true;
@@ -1376,18 +1292,18 @@ async function refreshScreamsheet() {
   const btn = document.getElementById('nl-refresh-btn');
   if (btn) btn.classList.add('refreshing');
   renderScreamsheet();
-  const results = await Promise.allSettled(NEWSLETTER_FEEDS.map(f => fetchNlFeed(f)));
-  const items = [];
-  results.forEach((r, i) => {
-    if (r.status === 'fulfilled') items.push(...r.value);
-    else {
-      state.nlFailedFeeds.push(NEWSLETTER_FEEDS[i].label);
-      console.error('[Screamsheet] feed failed:', NEWSLETTER_FEEDS[i].label, r.reason);
-    }
-  });
-  items.sort((a, b) => b.published - a.published);
-  state.nlItems = items;
-  if (items.length) { state.nlCachedItems = items; saveNlCache(); }
+  try {
+    const res = await fetch('./feeds.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.errors?.length) state.nlFailedFeeds = data.errors;
+    const items = (data.items || []).slice().sort((a, b) => b.published - a.published);
+    state.nlItems = items;
+    if (items.length) { state.nlCachedItems = items; saveNlCache(); }
+  } catch(e) {
+    console.error('[Screamsheet] failed to load feeds.json:', e);
+    state.nlFailedFeeds = NEWSLETTER_FEEDS.map(f => f.label);
+  }
   state.nlLoading = false;
   if (btn) btn.classList.remove('refreshing');
   renderScreamsheet();
