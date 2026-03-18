@@ -926,7 +926,11 @@ const DEFAULT_SUBS = [
   'startups',          // real problems, real scars
 ];
 
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://cors.workers.dev/?',
+];
 
 const NEWSLETTER_FEEDS = [
   { key: 'the-batch',     label: 'The Batch',      url: 'https://rsshub.app/deeplearning/the-batch' },
@@ -1322,12 +1326,18 @@ async function fetchNlFeed(feed) {
   try {
     const direct = await fetch(feed.url);
     if (direct.ok) return parseNlItems(await direct.text(), feed);
-  } catch(e) { /* CORS-blocked or network error — fall through to proxy */ }
+  } catch(e) { /* CORS-blocked or network error — fall through to proxies */ }
 
-  // Proxy fallback
-  const res = await fetch(CORS_PROXY + encodeURIComponent(feed.url));
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return parseNlItems(await res.text(), feed);
+  // Round-robin through proxy list
+  let lastErr;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const res = await fetch(proxy + encodeURIComponent(feed.url));
+      if (res.ok) return parseNlItems(await res.text(), feed);
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch(e) { lastErr = e; }
+  }
+  throw lastErr || new Error('All proxies failed');
 }
 
 async function refreshScreamsheet() {
