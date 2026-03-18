@@ -933,11 +933,11 @@ const CORS_PROXIES = [
 ];
 
 const NEWSLETTER_FEEDS = [
-  { key: 'the-batch',     label: 'The Batch',      url: 'https://rsshub.app/deeplearning/the-batch' },
-  { key: 'import-ai',     label: 'Import AI',       url: 'https://importai.substack.com/feed' },
-  { key: 'ainews',        label: 'AI News',         url: 'https://news.smol.ai/rss.xml' },
-  { key: 'hf-papers',     label: 'HF Papers',       url: 'https://raw.githubusercontent.com/huangboming/huggingface-daily-paper-feed/refs/heads/main/feed.xml' },
   { key: 'simonwillison', label: 'Simon Willison',  url: 'https://simonwillison.net/atom/everything/' },
+  { key: 'import-ai',     label: 'Import AI',       url: 'https://importai.substack.com/feed' },
+  { key: 'hf-papers',     label: 'HF Papers',       url: 'https://raw.githubusercontent.com/huangboming/huggingface-daily-paper-feed/refs/heads/main/feed.xml' },
+  { key: 'hf-blog',       label: 'HF Blog',         url: 'https://huggingface.co/blog/feed.xml' },
+  { key: 'ainews',        label: 'AI News',         url: 'https://buttondown.com/ainews/rss' },
 ];
 
 const VISITED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -1292,6 +1292,9 @@ function stripHtml(html) {
 function parseNlItems(xmlText, feed) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, 'application/xml');
+  if (doc.querySelector('parsererror')) {
+    throw new Error(`${feed.label}: invalid XML (proxy likely returned an error page)`);
+  }
   const isAtom = !!doc.querySelector('feed');
   const nodes = isAtom ? doc.querySelectorAll('entry') : doc.querySelectorAll('item');
   const items = [];
@@ -1351,7 +1354,10 @@ async function refreshScreamsheet() {
   const items = [];
   results.forEach((r, i) => {
     if (r.status === 'fulfilled') items.push(...r.value);
-    else state.nlFailedFeeds.push(NEWSLETTER_FEEDS[i].label);
+    else {
+      state.nlFailedFeeds.push(NEWSLETTER_FEEDS[i].label);
+      console.error('[Screamsheet] feed failed:', NEWSLETTER_FEEDS[i].label, r.reason);
+    }
   });
   items.sort((a, b) => b.published - a.published);
   state.nlItems = items;
