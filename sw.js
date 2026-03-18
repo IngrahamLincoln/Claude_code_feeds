@@ -1,7 +1,7 @@
 // AI Reader — Service Worker
 // Caches the app shell for offline use; serves Reddit API calls from network with cache fallback.
 
-const CACHE_NAME = 'ai-reader-v2';
+const CACHE_NAME = 'ai-reader-v4';
 const SHELL = [
   './',
   './index.html',
@@ -45,6 +45,12 @@ self.addEventListener('fetch', event => {
 
   // Reddit API: network first
   if (url.hostname === 'www.reddit.com' && url.pathname.endsWith('.json')) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // feeds.json: always network first so the PWA shows fresh content
+  if (url.origin === self.location.origin && url.pathname.endsWith('/feeds.json')) {
     event.respondWith(networkFirst(request));
     return;
   }
