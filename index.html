@@ -1293,9 +1293,14 @@ function parseNlItems(xmlText, feed) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, 'application/xml');
   if (doc.querySelector('parsererror')) {
-    throw new Error(`${feed.label}: invalid XML (proxy likely returned an error page)`);
+    throw new Error(`${feed.label}: XML parse error`);
   }
-  const isAtom = !!doc.querySelector('feed');
+  // If the root element is <html> the proxy returned an error page
+  const root = doc.documentElement?.tagName?.toLowerCase();
+  if (root === 'html' || root === 'body') {
+    throw new Error(`${feed.label}: got HTML instead of XML`);
+  }
+  const isAtom = root === 'feed' || !!doc.querySelector('feed');
   const nodes = isAtom ? doc.querySelectorAll('entry') : doc.querySelectorAll('item');
   const items = [];
   for (const node of nodes) {
@@ -1325,13 +1330,34 @@ function parseNlItems(xmlText, feed) {
 }
 
 async function fetchNlFeed(feed) {
-  // Try direct fetch first (works if the feed sends CORS headers, e.g. Substack, GitHub)
+  // 1. Try direct (GitHub raw, some Substacks, Simon Willison all send CORS headers)
   try {
     const direct = await fetch(feed.url);
-    if (direct.ok) return parseNlItems(await direct.text(), feed);
-  } catch(e) { /* CORS-blocked or network error — fall through to proxies */ }
+    if (direct.ok) {
+      const items = parseNlItems(await direct.text(), feed);
+      if (items.length > 0) return items;
+    }
+  } catch(e) { /* CORS-blocked or bad XML — continue */ }
 
-  // Round-robin through proxy list
+  // 2. rss2json.com — handles CORS natively, more reliable than raw proxies
+  try {
+    const r2j = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
+    if (r2j.ok) {
+      const data = await r2j.json();
+      if (data.status === 'ok' && data.items?.length) {
+        return data.items.map(item => ({
+          id: item.guid || item.link || item.title,
+          title: item.title || '(no title)',
+          feedKey: feed.key,
+          url: item.link || '',
+          published: item.pubDate ? Math.floor(new Date(item.pubDate).getTime() / 1000) : 0,
+          summary: stripHtml(item.description || item.content || '').replace(/\s+/g, ' ').slice(0, 220),
+        }));
+      }
+    }
+  } catch(e) { /* continue to CORS proxies */ }
+
+  // 3. CORS proxy round-robin fallback
   let lastErr;
   for (const proxy of CORS_PROXIES) {
     try {
@@ -1340,7 +1366,7 @@ async function fetchNlFeed(feed) {
       lastErr = new Error(`HTTP ${res.status}`);
     } catch(e) { lastErr = e; }
   }
-  throw lastErr || new Error('All proxies failed');
+  throw lastErr || new Error('All methods failed');
 }
 
 async function refreshScreamsheet() {
