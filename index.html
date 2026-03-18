@@ -926,7 +926,11 @@ const DEFAULT_SUBS = [
   'startups',          // real problems, real scars
 ];
 
-const CORS_PROXY = 'https://corsproxy.io/?';
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://cors.workers.dev/?',
+];
 
 const NEWSLETTER_FEEDS = [
   { key: 'the-batch',     label: 'The Batch',      url: 'https://rsshub.app/deeplearning/the-batch' },
@@ -957,7 +961,7 @@ let state = {
   nlItems: [],
   nlCachedItems: [],
   nlLoading: false,
-  nlError: null,
+  nlFailedFeeds: [],
   nlLastFetch: null,
   nlActiveFilter: 'all',
 };
@@ -1187,26 +1191,28 @@ function renderScreamsheet() {
   const items = state.nlItems.length ? state.nlItems : state.nlCachedItems;
 
   if (!items.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <h3>No newsletters loaded</h3>
-        <p>Hit Refresh to fetch the latest issues.</p>
-      </div>
-    `;
+    const msg = state.nlFailedFeeds.length === NEWSLETTER_FEEDS.length
+      ? `<p>All feeds failed to load. Check your connection and try again.</p><p style="font-size:11px;color:var(--text-3);font-family:var(--mono);margin-top:8px">${state.nlFailedFeeds.map(esc).join(' · ')}</p>`
+      : `<p>Hit Refresh to fetch the latest issues.</p>`;
+    container.innerHTML = `<div class="empty-state"><h3>No newsletters loaded</h3>${msg}</div>`;
     return;
   }
+
+  const failureNotice = state.nlFailedFeeds.length
+    ? `<div class="stale-notice">Failed to load: ${state.nlFailedFeeds.map(esc).join(', ')}</div>`
+    : '';
 
   const filtered = state.nlActiveFilter === 'all'
     ? items
     : items.filter(i => i.feedKey === state.nlActiveFilter);
 
   if (!filtered.length) {
-    container.innerHTML = `<div class="empty-state"><h3>Nothing here</h3></div>`;
+    container.innerHTML = failureNotice + `<div class="empty-state"><h3>Nothing here</h3></div>`;
     return;
   }
 
   const visited = getVisited();
-  container.innerHTML = filtered.map(item => buildNewsletterCard(item, visited)).join('');
+  container.innerHTML = failureNotice + filtered.map(item => buildNewsletterCard(item, visited)).join('');
   container.insertAdjacentHTML('beforeend', `
     <div class="feed-end">
       <div class="feed-end-count">${filtered.length} items</div>
@@ -1316,33 +1322,43 @@ function parseNlItems(xmlText, feed) {
 }
 
 async function fetchNlFeed(feed) {
-  const res = await fetch(CORS_PROXY + encodeURIComponent(feed.url));
-  if (!res.ok) throw new Error(`${feed.label}: ${res.status}`);
-  const text = await res.text();
-  return parseNlItems(text, feed);
+  // Try direct fetch first (works if the feed sends CORS headers, e.g. Substack, GitHub)
+  try {
+    const direct = await fetch(feed.url);
+    if (direct.ok) return parseNlItems(await direct.text(), feed);
+  } catch(e) { /* CORS-blocked or network error — fall through to proxies */ }
+
+  // Round-robin through proxy list
+  let lastErr;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const res = await fetch(proxy + encodeURIComponent(feed.url));
+      if (res.ok) return parseNlItems(await res.text(), feed);
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch(e) { lastErr = e; }
+  }
+  throw lastErr || new Error('All proxies failed');
 }
 
 async function refreshScreamsheet() {
   if (state.nlLoading) return;
   state.nlLoading = true;
-  state.nlError = null;
+  state.nlFailedFeeds = [];
   const btn = document.getElementById('nl-refresh-btn');
   if (btn) btn.classList.add('refreshing');
   renderScreamsheet();
-  try {
-    const results = await Promise.allSettled(NEWSLETTER_FEEDS.map(f => fetchNlFeed(f)));
-    const items = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
-    items.sort((a, b) => b.published - a.published);
-    state.nlItems = items;
-    state.nlCachedItems = items;
-    saveNlCache();
-  } catch(e) {
-    state.nlError = 'Failed to load newsletters.';
-  } finally {
-    state.nlLoading = false;
-    if (btn) btn.classList.remove('refreshing');
-    renderScreamsheet();
-  }
+  const results = await Promise.allSettled(NEWSLETTER_FEEDS.map(f => fetchNlFeed(f)));
+  const items = [];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') items.push(...r.value);
+    else state.nlFailedFeeds.push(NEWSLETTER_FEEDS[i].label);
+  });
+  items.sort((a, b) => b.published - a.published);
+  state.nlItems = items;
+  if (items.length) { state.nlCachedItems = items; saveNlCache(); }
+  state.nlLoading = false;
+  if (btn) btn.classList.remove('refreshing');
+  renderScreamsheet();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
